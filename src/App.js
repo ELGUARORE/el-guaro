@@ -27,6 +27,8 @@ function App() {
     return JSON.parse(localStorage.getItem('contabilidad')) || [];
   });
   const [vista, setVista] = useState('pedidos');
+  const [comentarios, setComentarios] = useState({});
+  const [metodoPago, setMetodoPago] = useState('efectivo');
 
   useEffect(() => {
     const guardados = JSON.parse(localStorage.getItem('historialPedidos')) || [];
@@ -34,8 +36,8 @@ function App() {
   }, []);
 
   const agregarPedido = (producto) => {
-    const comentario = prompt("Comentario para este producto (opcional):") || "";
     const key = `mesa${mesaSeleccionada}`;
+    const comentario = comentarios[producto.nombre] || "";
     const precio = tipoConsumo === 'mesa' ? producto.mesa : producto.llevar;
     const item = { nombre: producto.nombre, precio, comentario };
 
@@ -46,6 +48,11 @@ function App() {
         [key]: [...prevMesa, item],
       };
     });
+
+    setComentarios((prev) => ({
+      ...prev,
+      [producto.nombre]: '', // limpiar el comentario después de usarlo
+    }));
   };
 
   const eliminarPedido = (index) => {
@@ -73,6 +80,7 @@ function App() {
       mesa: mesaSeleccionada,
       pedido,
       total,
+      metodoPago,
       fecha: new Date().toLocaleString(),
     };
 
@@ -81,6 +89,7 @@ function App() {
     localStorage.setItem('historialPedidos', JSON.stringify(nuevoHistorial));
 
     setPedidos((prev) => ({ ...prev, [key]: [] }));
+    setMetodoPago('efectivo');
     alert('Pedido guardado correctamente');
   };
 
@@ -153,7 +162,21 @@ function App() {
                   {productos.map((prod) => (
                     <li key={prod.nombre}>
                       {prod.nombre} - ${tipoConsumo === 'mesa' ? prod.mesa : prod.llevar}
-                      <button onClick={() => agregarPedido(prod)} style={{ marginLeft: 10 }}>Agregar</button>
+                      <input
+                        type="text"
+                        placeholder="Comentario"
+                        value={comentarios[prod.nombre] || ""}
+                        onChange={(e) =>
+                          setComentarios((prev) => ({
+                            ...prev,
+                            [prod.nombre]: e.target.value,
+                          }))
+                        }
+                        style={{ marginLeft: 10 }}
+                      />
+                      <button onClick={() => agregarPedido(prod)} style={{ marginLeft: 10 }}>
+                        Agregar
+                      </button>
                     </li>
                   ))}
                 </ul>
@@ -171,7 +194,22 @@ function App() {
                   ))}
                 </ul>
                 <h4>Total: ${calcularTotal()}</h4>
-                <button onClick={guardarPedido}>Finalizar y Guardar Pedido</button>
+                <label>
+                  Método de Pago:
+                  <select
+                    value={metodoPago}
+                    onChange={(e) => setMetodoPago(e.target.value)}
+                    style={{ marginLeft: 10 }}
+                  >
+                    <option value="efectivo">Efectivo</option>
+                    <option value="tarjeta">Tarjeta</option>
+                    <option value="transferencia">Transferencia</option>
+                  </select>
+                </label>
+                <br />
+                <button onClick={guardarPedido} style={{ marginTop: 10 }}>
+                  Finalizar y Guardar Pedido
+                </button>
               </div>
             </div>
           )}
@@ -182,16 +220,20 @@ function App() {
               <ul>
                 {historial.map((registro, index) => (
                   <li key={index} style={{ marginBottom: 10 }}>
-                    <strong>Mesa {registro.mesa}</strong> - {registro.fecha} - Total: ${registro.total}
+                    <strong>Mesa {registro.mesa}</strong> - {registro.fecha} - Total: ${registro.total} - <strong>Pago:</strong> {registro.metodoPago}
                     <ul>
                       {registro.pedido.map((item, i) => (
-                        <li key={i}>{item.nombre} - ${item.precio} {item.comentario && <em>(Comentario: {item.comentario})</em>}</li>
+                        <li key={i}>
+                          {item.nombre} - ${item.precio} {item.comentario && <em>(Comentario: {item.comentario})</em>}
+                        </li>
                       ))}
                     </ul>
                   </li>
                 ))}
               </ul>
-              <button onClick={finalizarDia} style={{ marginTop: 20, backgroundColor: 'orange' }}>Finalizar Día</button>
+              <button onClick={finalizarDia} style={{ marginTop: 20, backgroundColor: 'orange' }}>
+                Finalizar Día
+              </button>
             </div>
           )}
 
